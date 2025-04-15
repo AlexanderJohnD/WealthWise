@@ -1,7 +1,9 @@
 node_modules/
-.claude
 *.log
+.claude
+wealthwise.db
 .env
-CLAUDE.md
 dist/
+CLAUDE.md
 coverage/
+*.sqlite
