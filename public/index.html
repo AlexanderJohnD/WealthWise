@@ -25,20 +25,70 @@
             <div class="stats-grid">
                 <div class="stat-card">
                     <h3>Net Worth</h3>
-                    <p class="amount">$0.00</p>
+                    <p class="amount" id="net-worth">$0.00</p>
                 </div>
                 <div class="stat-card">
                     <h3>Monthly Income</h3>
-                    <p class="amount">$0.00</p>
+                    <p class="amount" id="monthly-income">$0.00</p>
                 </div>
                 <div class="stat-card">
                     <h3>Monthly Expenses</h3>
-                    <p class="amount">$0.00</p>
+                    <p class="amount" id="monthly-expenses">$0.00</p>
                 </div>
                 <div class="stat-card">
                     <h3>Savings Rate</h3>
-                    <p class="amount">0%</p>
+                    <p class="amount" id="savings-rate">0%</p>
                 </div>
+            </div>
+        </section>
+
+        <section id="portfolio">
+            <h2>Investment Portfolio</h2>
+            <div class="portfolio-actions">
+                <button id="add-investment-btn" class="btn btn-primary">Add Investment</button>
+            </div>
+            <div class="portfolio-summary">
+                <div class="stat-card">
+                    <h3>Total Portfolio Value</h3>
+                    <p class="amount" id="portfolio-value">$0.00</p>
+                </div>
+                <div class="stat-card">
+                    <h3>Total Gain/Loss</h3>
+                    <p class="amount" id="portfolio-gain">$0.00</p>
+                </div>
+            </div>
+            <div class="portfolio-table">
+                <table id="investments-table">
+                    <thead>
+                        <tr>
+                            <th>Symbol</th>
+                            <th>Shares</th>
+                            <th>Avg. Cost</th>
+                            <th>Current Value</th>
+                            <th>Gain/Loss</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- Investment rows will be populated here -->
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <section id="expenses">
+            <h2>Expense Tracking</h2>
+            <div class="expense-actions">
+                <button id="add-expense-btn" class="btn btn-primary">Add Expense</button>
+            </div>
+            <div id="expense-list">
+                <!-- Expense items will be populated here -->
+            </div>
+        </section>
+
+        <section id="goals">
+            <h2>Financial Goals</h2>
+            <div class="goals-container">
+                <p>Coming soon...</p>
             </div>
         </section>
     </main>
