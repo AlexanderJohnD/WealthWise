@@ -48,6 +48,33 @@ function initializeTables() {
             FOREIGN KEY (account_id) REFERENCES accounts (id)
         )
     `);
+
+    // Investments table
+    db.run(`
+        CREATE TABLE IF NOT EXISTS investments (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id INTEGER,
+            symbol TEXT NOT NULL,
+            shares REAL NOT NULL,
+            purchase_price REAL NOT NULL,
+            purchase_date DATETIME DEFAULT CURRENT_TIMESTAMP,
+            current_price REAL DEFAULT 0,
+            FOREIGN KEY (user_id) REFERENCES users (id)
+        )
+    `);
+
+    // Expenses table
+    db.run(`
+        CREATE TABLE IF NOT EXISTS expenses (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id INTEGER,
+            amount REAL NOT NULL,
+            description TEXT NOT NULL,
+            category TEXT NOT NULL,
+            date DATETIME DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (user_id) REFERENCES users (id)
+        )
+    `);
 }
 
 module.exports = db;
