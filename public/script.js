@@ -27,6 +27,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // Event listeners for buttons
     document.getElementById('add-investment-btn')?.addEventListener('click', showAddInvestmentModal);
     document.getElementById('add-expense-btn')?.addEventListener('click', showAddExpenseModal);
+    document.getElementById('add-goal-btn')?.addEventListener('click', showAddGoalModal);
 });
 
 function loadDashboardData() {
@@ -59,18 +60,15 @@ function showAddInvestmentModal() {
 }
 
 function addInvestment(symbol, shares, price) {
-    const totalValue = shares * price;
-    
-    // Create account for this investment
-    fetch('/api/accounts', {
+    fetch('/api/investments', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-            name: `${symbol} Stock`,
-            type: 'investment',
-            balance: totalValue
+            symbol: symbol,
+            shares: shares,
+            purchase_price: price
         })
     })
     .then(response => response.json())
@@ -83,11 +81,11 @@ function addInvestment(symbol, shares, price) {
 }
 
 function loadPortfolioData() {
-    fetch('/api/accounts')
+    fetch('/api/investments')
         .then(response => response.json())
         .then(data => {
-            const investments = data.filter(account => account.type === 'investment');
-            updatePortfolioTable(investments);
+            updatePortfolioTable(data);
+            updatePortfolioSummary(data);
         })
         .catch(error => console.error('Error loading portfolio:', error));
 }
@@ -98,16 +96,42 @@ function updatePortfolioTable(investments) {
     
     investments.forEach(investment => {
         const row = document.createElement('tr');
-        const symbol = investment.name.replace(' Stock', '');
+        const totalValue = investment.shares * investment.purchase_price;
+        const currentValue = investment.current_price > 0 ? investment.shares * investment.current_price : totalValue;
+        const gainLoss = currentValue - totalValue;
+        const gainLossPercent = totalValue > 0 ? ((gainLoss / totalValue) * 100).toFixed(2) : 0;
+        
         row.innerHTML = `
-            <td>${symbol}</td>
-            <td>-</td>
-            <td>-</td>
-            <td>$${investment.balance.toFixed(2)}</td>
-            <td>-</td>
+            <td>${investment.symbol}</td>
+            <td>${investment.shares}</td>
+            <td>$${investment.purchase_price.toFixed(2)}</td>
+            <td>$${currentValue.toFixed(2)}</td>
+            <td style="color: ${gainLoss >= 0 ? 'green' : 'red'}">
+                $${gainLoss.toFixed(2)} (${gainLossPercent}%)
+            </td>
         `;
         tbody.appendChild(row);
     });
+}
+
+function updatePortfolioSummary(investments) {
+    let totalValue = 0;
+    let totalCost = 0;
+    
+    investments.forEach(investment => {
+        const cost = investment.shares * investment.purchase_price;
+        const current = investment.current_price > 0 ? 
+            investment.shares * investment.current_price : cost;
+        
+        totalCost += cost;
+        totalValue += current;
+    });
+    
+    const totalGain = totalValue - totalCost;
+    
+    document.getElementById('portfolio-value').textContent = `$${totalValue.toFixed(2)}`;
+    document.getElementById('portfolio-gain').textContent = `$${totalGain.toFixed(2)}`;
+    document.getElementById('portfolio-gain').style.color = totalGain >= 0 ? 'green' : 'red';
 }
 
 function showAddExpenseModal() {
@@ -121,17 +145,128 @@ function showAddExpenseModal() {
 }
 
 function addExpense(description, amount, category) {
-    console.log('Adding expense:', { description, amount, category });
-    
+    fetch('/api/expenses', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            description: description,
+            amount: amount,
+            category: category
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        console.log('Expense added:', data);
+        loadExpenseData();
+        loadDashboardData();
+    })
+    .catch(error => console.error('Error adding expense:', error));
+}
+
+function loadExpenseData() {
+    fetch('/api/expenses')
+        .then(response => response.json())
+        .then(data => {
+            updateExpenseList(data);
+        })
+        .catch(error => console.error('Error loading expenses:', error));
+}
+
+function updateExpenseList(expenses) {
     const expenseList = document.getElementById('expense-list');
-    const expenseItem = document.createElement('div');
-    expenseItem.className = 'expense-item';
-    expenseItem.innerHTML = `
-        <div>
-            <strong>${description}</strong>
-            <small style="display: block; color: #666;">${category}</small>
-        </div>
-        <div class="amount" style="font-size: 1rem;">-$${amount.toFixed(2)}</div>
-    `;
-    expenseList.appendChild(expenseItem);
+    expenseList.innerHTML = '';
+    
+    expenses.slice(0, 10).forEach(expense => {
+        const expenseItem = document.createElement('div');
+        expenseItem.className = 'expense-item';
+        const date = new Date(expense.date).toLocaleDateString();
+        expenseItem.innerHTML = `
+            <div>
+                <strong>${expense.description}</strong>
+                <small style="display: block; color: #666;">${expense.category} • ${date}</small>
+            </div>
+            <div class="amount" style="font-size: 1rem; color: #e74c3c;">-$${expense.amount.toFixed(2)}</div>
+        `;
+        expenseList.appendChild(expenseItem);
+    });
+}
+
+// Load expense data when switching to expenses tab
+document.addEventListener('DOMContentLoaded', function() {
+    const expensesLink = document.querySelector('a[href="#expenses"]');
+    if (expensesLink) {
+        expensesLink.addEventListener('click', loadExpenseData);
+    }
+    
+    const portfolioLink = document.querySelector('a[href="#portfolio"]');
+    if (portfolioLink) {
+        portfolioLink.addEventListener('click', loadPortfolioData);
+    }
+    
+    const goalsLink = document.querySelector('a[href="#goals"]');
+    if (goalsLink) {
+        goalsLink.addEventListener('click', loadGoalsData);
+    }
+});
+
+function showAddGoalModal() {
+    const title = prompt('Goal title (e.g., Emergency Fund):');
+    const target = prompt('Target amount:');
+    const current = prompt('Current amount (optional):') || '0';
+    
+    if (title && target) {
+        addGoal(title, parseFloat(target), parseFloat(current));
+    }
+}
+
+function addGoal(title, target, current) {
+    const goals = JSON.parse(localStorage.getItem('wealthwise-goals') || '[]');
+    const newGoal = {
+        id: Date.now(),
+        title: title,
+        target: target,
+        current: current,
+        created: new Date().toISOString()
+    };
+    
+    goals.push(newGoal);
+    localStorage.setItem('wealthwise-goals', JSON.stringify(goals));
+    loadGoalsData();
+}
+
+function loadGoalsData() {
+    const goals = JSON.parse(localStorage.getItem('wealthwise-goals') || '[]');
+    updateGoalsList(goals);
+}
+
+function updateGoalsList(goals) {
+    const goalsList = document.getElementById('goals-list');
+    goalsList.innerHTML = '';
+    
+    if (goals.length === 0) {
+        goalsList.innerHTML = '<p style="text-align: center; color: #666; padding: 2rem;">No financial goals set yet. Click "Add Goal" to get started!</p>';
+        return;
+    }
+    
+    goals.forEach(goal => {
+        const percentage = Math.min((goal.current / goal.target) * 100, 100);
+        const goalItem = document.createElement('div');
+        goalItem.className = 'goal-item';
+        goalItem.innerHTML = `
+            <div class="goal-header">
+                <div class="goal-title">${goal.title}</div>
+                <div class="goal-target">$${goal.target.toFixed(2)}</div>
+            </div>
+            <div class="goal-progress">
+                <div class="goal-progress-bar" style="width: ${percentage}%"></div>
+            </div>
+            <div class="goal-details">
+                <span>$${goal.current.toFixed(2)} saved</span>
+                <span>${percentage.toFixed(1)}% complete</span>
+            </div>
+        `;
+        goalsList.appendChild(goalItem);
+    });
 }
