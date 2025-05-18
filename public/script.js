@@ -31,22 +31,59 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 function loadDashboardData() {
-    fetch('/api/accounts')
-        .then(response => response.json())
-        .then(data => {
-            updateDashboardStats(data);
-        })
-        .catch(error => console.error('Error loading dashboard:', error));
+    Promise.all([
+        fetch('/api/accounts').then(r => r.json()),
+        fetch('/api/investments').then(r => r.json()),
+        fetch('/api/expenses').then(r => r.json())
+    ])
+    .then(([accounts, investments, expenses]) => {
+        updateDashboardStats(accounts, investments, expenses);
+    })
+    .catch(error => console.error('Error loading dashboard:', error));
 }
 
-function updateDashboardStats(accounts) {
-    let totalBalance = 0;
+function updateDashboardStats(accounts, investments, expenses) {
+    // Calculate total account balances
+    let accountsTotal = 0;
     accounts.forEach(account => {
-        totalBalance += account.balance || 0;
+        accountsTotal += account.balance || 0;
     });
     
-    document.getElementById('net-worth').textContent = `$${totalBalance.toFixed(2)}`;
-    document.getElementById('portfolio-value').textContent = `$${totalBalance.toFixed(2)}`;
+    // Calculate total investments value
+    let investmentsTotal = 0;
+    investments.forEach(investment => {
+        const currentValue = investment.current_price > 0 ? 
+            investment.shares * investment.current_price : 
+            investment.shares * investment.purchase_price;
+        investmentsTotal += currentValue;
+    });
+    
+    // Calculate monthly expenses (last 30 days)
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+    
+    let monthlyExpenses = 0;
+    expenses.forEach(expense => {
+        const expenseDate = new Date(expense.date);
+        if (expenseDate >= thirtyDaysAgo) {
+            monthlyExpenses += expense.amount;
+        }
+    });
+    
+    // Calculate net worth (assets - recent expenses, simplified)
+    const netWorth = accountsTotal + investmentsTotal;
+    
+    // Calculate savings rate (simplified assumption)
+    const monthlyIncome = 5000; // placeholder, could be configurable
+    const savingsRate = monthlyIncome > 0 ? 
+        Math.max(0, ((monthlyIncome - monthlyExpenses) / monthlyIncome) * 100) : 0;
+    
+    // Update dashboard display
+    document.getElementById('net-worth').textContent = `$${netWorth.toFixed(2)}`;
+    document.getElementById('monthly-income').textContent = `$${monthlyIncome.toFixed(2)}`;
+    document.getElementById('monthly-expenses').textContent = `$${monthlyExpenses.toFixed(2)}`;
+    document.getElementById('savings-rate').textContent = `${savingsRate.toFixed(1)}%`;
+    document.getElementById('portfolio-value').textContent = `$${investmentsTotal.toFixed(2)}`;
 }
 
 function showAddInvestmentModal() {
