@@ -91,9 +91,31 @@ function showAddInvestmentModal() {
     const shares = prompt('Number of shares:');
     const price = prompt('Purchase price per share:');
     
-    if (symbol && shares && price) {
-        addInvestment(symbol, parseInt(shares), parseFloat(price));
+    // Validation
+    if (!symbol || !shares || !price) {
+        alert('Please fill in all fields');
+        return;
     }
+    
+    if (symbol.trim() === '') {
+        alert('Stock symbol cannot be empty');
+        return;
+    }
+    
+    const sharesNum = parseInt(shares);
+    const priceNum = parseFloat(price);
+    
+    if (isNaN(sharesNum) || sharesNum <= 0) {
+        alert('Shares must be a positive number');
+        return;
+    }
+    
+    if (isNaN(priceNum) || priceNum <= 0) {
+        alert('Price must be a positive number');
+        return;
+    }
+    
+    addInvestment(symbol.trim().toUpperCase(), sharesNum, priceNum);
 }
 
 function addInvestment(symbol, shares, price) {
@@ -108,13 +130,22 @@ function addInvestment(symbol, shares, price) {
             purchase_price: price
         })
     })
-    .then(response => response.json())
+    .then(response => {
+        if (!response.ok) {
+            throw new Error(`Server error: ${response.status}`);
+        }
+        return response.json();
+    })
     .then(data => {
         console.log('Investment added:', data);
+        alert(`Successfully added ${shares} shares of ${symbol}`);
         loadDashboardData();
         loadPortfolioData();
     })
-    .catch(error => console.error('Error adding investment:', error));
+    .catch(error => {
+        console.error('Error adding investment:', error);
+        alert('Failed to add investment. Please try again.');
+    });
 }
 
 function loadPortfolioData() {
@@ -176,9 +207,24 @@ function showAddExpenseModal() {
     const amount = prompt('Amount:');
     const category = prompt('Category (e.g., Food, Transport, Entertainment):');
     
-    if (description && amount && category) {
-        addExpense(description, parseFloat(amount), category);
+    // Validation
+    if (!description || !amount || !category) {
+        alert('Please fill in all fields');
+        return;
     }
+    
+    if (description.trim() === '' || category.trim() === '') {
+        alert('Description and category cannot be empty');
+        return;
+    }
+    
+    const amountNum = parseFloat(amount);
+    if (isNaN(amountNum) || amountNum <= 0) {
+        alert('Amount must be a positive number');
+        return;
+    }
+    
+    addExpense(description.trim(), amountNum, category.trim());
 }
 
 function addExpense(description, amount, category) {
@@ -193,13 +239,22 @@ function addExpense(description, amount, category) {
             category: category
         })
     })
-    .then(response => response.json())
+    .then(response => {
+        if (!response.ok) {
+            throw new Error(`Server error: ${response.status}`);
+        }
+        return response.json();
+    })
     .then(data => {
         console.log('Expense added:', data);
+        alert(`Successfully added expense: ${description} ($${amount.toFixed(2)})`);
         loadExpenseData();
         loadDashboardData();
     })
-    .catch(error => console.error('Error adding expense:', error));
+    .catch(error => {
+        console.error('Error adding expense:', error);
+        alert('Failed to add expense. Please try again.');
+    });
 }
 
 function loadExpenseData() {
@@ -253,9 +308,36 @@ function showAddGoalModal() {
     const target = prompt('Target amount:');
     const current = prompt('Current amount (optional):') || '0';
     
-    if (title && target) {
-        addGoal(title, parseFloat(target), parseFloat(current));
+    // Validation
+    if (!title || !target) {
+        alert('Please provide a goal title and target amount');
+        return;
     }
+    
+    if (title.trim() === '') {
+        alert('Goal title cannot be empty');
+        return;
+    }
+    
+    const targetNum = parseFloat(target);
+    const currentNum = parseFloat(current);
+    
+    if (isNaN(targetNum) || targetNum <= 0) {
+        alert('Target amount must be a positive number');
+        return;
+    }
+    
+    if (isNaN(currentNum) || currentNum < 0) {
+        alert('Current amount must be zero or positive');
+        return;
+    }
+    
+    if (currentNum > targetNum) {
+        alert('Current amount cannot be greater than target amount');
+        return;
+    }
+    
+    addGoal(title.trim(), targetNum, currentNum);
 }
 
 function addGoal(title, target, current) {
